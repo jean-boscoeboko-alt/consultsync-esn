@@ -1,6 +1,9 @@
 {
   "name": "consultsync-backend",
   "version": "1.0.0",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "description": "API RESTful Back-end pour la plateforme ERP & Staffing ConsultSync",
   "main": "server.js",
   "scripts": {
