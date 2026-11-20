@@ -76,8 +76,21 @@ function authorizeRoles(...allowedRoles) {
   };
 }
 
+/**
+ * Middleware dédié à l'espace Administration / Direction (Lot 3)
+ * Vérifie strictement que req.user.role === 'ADMIN'
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).json({
+      error: 'Accès réservé aux administrateurs et managers (rôle ADMIN requis).',
+    });
+  }
+  next();
+}
+
 // ==========================================
-// HELPERS DE VALIDATION & NORMALISATION (LOT 2)
+// HELPERS DE VALIDATION & NORMALISATION
 // ==========================================
 
 const CRA_DAY_TYPE_MAP = {
@@ -119,6 +132,26 @@ const ABSENCE_TYPE_MAP = {
   UNPAID: 'UNPAID',
   'Congé sans solde': 'UNPAID',
 };
+
+/**
+ * Retourne le mois courant au format "YYYY-MM" (UTC)
+ */
+function getCurrentYearMonth() {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Retourne les bornes [startDate, endDate[ UTC pour un mois "YYYY-MM"
+ */
+function getMonthDateRange(monthStr) {
+  const [year, monthNum] = monthStr.split('-').map(Number);
+  const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
+  const endDate = new Date(Date.UTC(year, monthNum, 1));
+  return { startDate, endDate };
+}
 
 /**
  * Convertit une chaîne "YYYY-MM-DD" en Date UTC à 00:00:00.000
@@ -292,9 +325,7 @@ app.get('/api/cra', authenticateToken, async (req, res) => {
       });
     }
 
-    const [year, monthNum] = month.split('-').map(Number);
-    const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
-    const endDate = new Date(Date.UTC(year, monthNum, 1));
+    const { startDate, endDate } = getMonthDateRange(month);
 
     const entries = await prisma.craEntry.findMany({
       where: {
@@ -344,15 +375,6 @@ app.get('/api/cra', authenticateToken, async (req, res) => {
 /**
  * POST /api/cra
  * Enregistre ou met à jour les jours déclarés (travaillé, congé, astreinte) pour le mois
- * Body attendu :
- * {
- *   "month": "2026-11", // optionnel si toutes les dates sont fournies
- *   "submit": true,       // true => status SUBMITTED, false => status DRAFT
- *   "missionId": "...",   // optionnel (utilise la mission ACTIVE par défaut si absente)
- *   "entries": [
- *     { "date": "2026-11-02", "dayType": "WORKED", "duration": 1, "comment": "..." }
- *   ]
- * }
  */
 app.post('/api/cra', authenticateToken, async (req, res) => {
   try {
@@ -370,7 +392,6 @@ app.post('/api/cra', authenticateToken, async (req, res) => {
       });
     }
 
-    // Résolution de la mission par défaut (mission ACTIVE du consultant)
     let resolvedMissionId = missionId || null;
     if (!resolvedMissionId) {
       const activeMission = await prisma.mission.findFirst({
@@ -425,7 +446,6 @@ app.post('/api/cra', authenticateToken, async (req, res) => {
       });
     }
 
-    // Vérifier qu'aucune entrée ciblée n'est déjà verrouillée (APPROVED)
     const existingApproved = await prisma.craEntry.findFirst({
       where: {
         userId: req.user.userId,
@@ -573,7 +593,6 @@ app.post('/api/expenses', authenticateToken, async (req, res) => {
       parsedExpenseDate = candidate;
     }
 
-    // Rattachement automatique à la mission active si missionId non fourni
     let resolvedMissionId = missionId || null;
     if (!resolvedMissionId) {
       const activeMission = await prisma.mission.findFirst({
@@ -733,7 +752,6 @@ app.post('/api/absences', authenticateToken, async (req, res) => {
       });
     }
 
-    // Vérification des soldes CP / RTT avant soumission
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
       select: { cpBalance: true, rttBalance: true },
@@ -787,6 +805,483 @@ app.post('/api/absences', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
+// ROUTES PROTÉGÉES (LOT 3) — ADMINISTRATION
+// ==========================================
+
+/**
+ * GET /api/admin/kpis?month=YYYY-MM
+ * Calcule et renvoie les indicateurs globaux de l'ESN :
+ * - Chiffre d'Affaires du mois (€)
+ * - TJM moyen (€)
+ * - TACE global (%)
+ * - Nombre de validations en attente (frais + absences)
+ */
+app.get('/api/admin/kpis', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const targetMonth = req.query.month || getCurrentYearMonth();
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(targetMonth)) {
+      return res.status(400).json({
+        error: 'Le paramètre "month" doit être au format YYYY-MM (ex: 2026-11).',
+      });
+    }
+
+    const { startDate, endDate } = getMonthDateRange(targetMonth);
+
+    const [
+      monthlyCraEntries,
+      activeMissions,
+      pendingExpensesCount,
+      pendingAbsencesCount,
+    ] = await Promise.all([
+      prisma.craEntry.findMany({
+        where: {
+          date: {
+            gte: startDate,
+            lt: endDate,
+          },
+        },
+        include: {
+          mission: {
+            select: {
+              tjm: true,
+            },
+          },
+        },
+      }),
+      prisma.mission.findMany({
+        where: {
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          tjm: true,
+        },
+      }),
+      prisma.expense.count({
+        where: { status: 'PENDING' },
+      }),
+      prisma.absence.count({
+        where: { status: 'PENDING' },
+      }),
+    ]);
+
+    // 1. Calcul du Chiffre d'Affaires du mois et des volumes de jours
+    let monthlyRevenue = 0;
+    let workedDays = 0;
+    let onCallDays = 0;
+    let leaveDays = 0;
+
+    for (const entry of monthlyCraEntries) {
+      if (entry.dayType === 'WORKED') {
+        workedDays += entry.duration;
+        const missionTjm = entry.mission ? entry.mission.tjm : 0;
+        monthlyRevenue += entry.duration * missionTjm;
+      } else if (entry.dayType === 'ON_CALL') {
+        onCallDays += entry.duration;
+      } else if (entry.dayType === 'LEAVE') {
+        leaveDays += entry.duration;
+      }
+    }
+
+    // 2. Calcul du TJM moyen sur les missions actives
+    const averageTjm =
+      activeMissions.length > 0
+        ? Number(
+            (
+              activeMissions.reduce((sum, m) => sum + m.tjm, 0) /
+              activeMissions.length
+            ).toFixed(2)
+          )
+        : 0;
+
+    // 3. Calcul du TACE global (Taux d'Activité Congés Exclus = WORKED / (WORKED + ON_CALL))
+    const availableDaysExcludingLeave = workedDays + onCallDays;
+    const tace =
+      availableDaysExcludingLeave > 0
+        ? Number(((workedDays / availableDaysExcludingLeave) * 100).toFixed(1))
+        : 0;
+
+    // 4. Nombre total de validations en attente
+    const pendingValidations = pendingExpensesCount + pendingAbsencesCount;
+
+    return res.status(200).json({
+      month: targetMonth,
+      kpis: {
+        monthlyRevenue: Number(monthlyRevenue.toFixed(2)),
+        averageTjm,
+        tace,
+        pendingValidations,
+        activeMissionsCount: activeMissions.length,
+        pendingExpensesCount,
+        pendingAbsencesCount,
+        breakdown: {
+          workedDays,
+          onCallDays,
+          leaveDays,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Erreur lors du calcul des KPIs (GET /api/admin/kpis) :', error);
+    return res.status(500).json({
+      error: 'Erreur interne du serveur lors du calcul des indicateurs.',
+    });
+  }
+});
+
+/**
+ * GET /api/admin/validations
+ * Liste toutes les notes de frais et demandes d'absences au statut PENDING avec le nom du consultant
+ */
+app.get('/api/admin/validations', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const [pendingExpenses, pendingAbsences] = await Promise.all([
+      prisma.expense.findMany({
+        where: { status: 'PENDING' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              jobTitle: true,
+            },
+          },
+          mission: {
+            select: {
+              id: true,
+              clientName: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.absence.findMany({
+        where: { status: 'PENDING' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              jobTitle: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const formattedExpenses = pendingExpenses.map((exp) => ({
+      id: exp.id,
+      type: 'expense',
+      consultantId: exp.user.id,
+      consultantName: `${exp.user.firstName} ${exp.user.lastName}`,
+      consultantEmail: exp.user.email,
+      title: exp.title,
+      category: exp.category,
+      amount: exp.amount,
+      expenseDate: exp.expenseDate,
+      receiptUrl: exp.receiptUrl,
+      mission: exp.mission,
+      status: exp.status,
+      createdAt: exp.createdAt,
+    }));
+
+    const formattedAbsences = pendingAbsences.map((abs) => ({
+      id: abs.id,
+      type: 'absence',
+      consultantId: abs.user.id,
+      consultantName: `${abs.user.firstName} ${abs.user.lastName}`,
+      consultantEmail: abs.user.email,
+      absenceType: abs.type,
+      startDate: abs.startDate,
+      endDate: abs.endDate,
+      daysCount: abs.daysCount,
+      justificationUrl: abs.justificationUrl,
+      comment: abs.comment,
+      status: abs.status,
+      createdAt: abs.createdAt,
+    }));
+
+    const validations = [...formattedExpenses, ...formattedAbsences].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    return res.status(200).json({
+      totalPending: validations.length,
+      validations,
+      expenses: formattedExpenses,
+      absences: formattedAbsences,
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des validations (GET /api/admin/validations) :', error);
+    return res.status(500).json({
+      error: 'Erreur interne du serveur lors de la récupération des demandes en attente.',
+    });
+  }
+});
+
+/**
+ * PATCH /api/admin/validations/:type/:id
+ * Approuve (APPROVED) ou rejette (REJECTED) une note de frais (expense) ou une absence (absence)
+ */
+app.patch('/api/admin/validations/:type/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { status, rejectionReason } = req.body;
+
+    if (!['expense', 'absence'].includes(type)) {
+      return res.status(400).json({
+        error: 'Type de validation invalide. Valeurs attendues : "expense" ou "absence".',
+      });
+    }
+
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({
+        error: 'Statut invalide. Valeurs attendues : "APPROVED" ou "REJECTED".',
+      });
+    }
+
+    const sanitizedReason =
+      status === 'REJECTED' && rejectionReason
+        ? String(rejectionReason).trim()
+        : null;
+
+    if (type === 'expense') {
+      const existingExpense = await prisma.expense.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: { firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      if (!existingExpense) {
+        return res.status(404).json({
+          error: 'Note de frais introuvable.',
+        });
+      }
+
+      if (existingExpense.status !== 'PENDING') {
+        return res.status(400).json({
+          error: `Cette note de frais a déjà été traitée (statut actuel : ${existingExpense.status}).`,
+        });
+      }
+
+      const updatedExpense = await prisma.expense.update({
+        where: { id },
+        data: {
+          status,
+          rejectionReason: sanitizedReason,
+        },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      return res.status(200).json({
+        message:
+          status === 'APPROVED'
+            ? 'Note de frais approuvée avec succès.'
+            : 'Note de frais rejetée.',
+        type: 'expense',
+        item: updatedExpense,
+      });
+    }
+
+    // Traitement d'une absence ('absence') avec mise à jour atomique du solde CP / RTT si approuvée
+    const existingAbsence = await prisma.absence.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            cpBalance: true,
+            rttBalance: true,
+          },
+        },
+      },
+    });
+
+    if (!existingAbsence) {
+      return res.status(404).json({
+        error: 'Demande d’absence introuvable.',
+      });
+    }
+
+    if (existingAbsence.status !== 'PENDING') {
+      return res.status(400).json({
+        error: `Cette demande d’absence a déjà été traitée (statut actuel : ${existingAbsence.status}).`,
+      });
+    }
+
+    const updatedAbsence = await prisma.$transaction(async (tx) => {
+      const absenceRecord = await tx.absence.update({
+        where: { id },
+        data: {
+          status,
+          rejectionReason: sanitizedReason,
+        },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      });
+
+      if (status === 'APPROVED') {
+        if (existingAbsence.type === 'CP') {
+          const newCpBalance = Math.max(
+            0,
+            Number((existingAbsence.user.cpBalance - existingAbsence.daysCount).toFixed(2))
+          );
+          await tx.user.update({
+            where: { id: existingAbsence.userId },
+            data: { cpBalance: newCpBalance },
+          });
+        } else if (existingAbsence.type === 'RTT') {
+          const newRttBalance = Math.max(
+            0,
+            Number((existingAbsence.user.rttBalance - existingAbsence.daysCount).toFixed(2))
+          );
+          await tx.user.update({
+            where: { id: existingAbsence.userId },
+            data: { rttBalance: newRttBalance },
+          });
+        }
+      }
+
+      return absenceRecord;
+    });
+
+    return res.status(200).json({
+      message:
+        status === 'APPROVED'
+          ? 'Demande d’absence approuvée et solde mis à jour.'
+          : 'Demande d’absence rejetée.',
+      type: 'absence',
+      item: updatedAbsence,
+    });
+  } catch (error) {
+    console.error('Erreur lors de la validation (PATCH /api/admin/validations/:type/:id) :', error);
+    return res.status(500).json({
+      error: 'Erreur interne du serveur lors de la mise à jour de la validation.',
+    });
+  }
+});
+
+/**
+ * POST /api/admin/reminders
+ * Enregistre / simule l'envoi des relances e-mail pour les consultants
+ * n'ayant pas encore soumis ou validé leur CRA du mois
+ */
+app.post('/api/admin/reminders', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const targetMonth = req.body.month || getCurrentYearMonth();
+    const { consultantIds } = req.body;
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(targetMonth)) {
+      return res.status(400).json({
+        error: 'Le champ "month" doit être au format YYYY-MM (ex: 2026-11).',
+      });
+    }
+
+    const { startDate, endDate } = getMonthDateRange(targetMonth);
+
+    // Recherche des consultants actifs (hors ADMIN) et de leurs entrées CRA déjà soumises/approuvées
+    const consultants = await prisma.user.findMany({
+      where: {
+        role: 'CONSULTANT',
+        isActive: true,
+        ...(Array.isArray(consultantIds) && consultantIds.length > 0
+          ? { id: { in: consultantIds } }
+          : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        craEntries: {
+          where: {
+            date: {
+              gte: startDate,
+              lt: endDate,
+            },
+            status: {
+              in: ['SUBMITTED', 'APPROVED'],
+            },
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    // Consultants n'ayant aucune journée soumise ou validée pour le mois ciblé
+    const lateConsultants = consultants.filter(
+      (consultant) => consultant.craEntries.length === 0
+    );
+
+    const workspaceBaseUrl = process.env.CLIENT_URL || 'http://localhost:5500';
+    const sentAt = new Date().toISOString();
+
+    const reminders = lateConsultants.map((consultant) => {
+      const fullName = `${consultant.firstName} ${consultant.lastName}`;
+      const directLink = `${workspaceBaseUrl}/?view=consultant&tab=cra&month=${targetMonth}`;
+
+      return {
+        consultantId: consultant.id,
+        consultantName: fullName,
+        email: consultant.email,
+        month: targetMonth,
+        status: 'SENT_SIMULATED',
+        sentAt,
+        emailPreview: {
+          to: consultant.email,
+          subject: `[Action requise] Saisie de votre CRA — ${targetMonth}`,
+          body: `Bonjour ${fullName}, sauf erreur de notre part, votre staffing pour la période de ${targetMonth} n'a pas encore été validé. Merci de le compléter dès aujourd'hui via votre espace : ${directLink}`,
+        },
+      };
+    });
+
+    if (reminders.length > 0) {
+      console.log(
+        `[ConsultSync Mailer] ${reminders.length} relance(s) CRA simulée(s) pour ${targetMonth} par admin ${req.user.email}`
+      );
+    }
+
+    return res.status(200).json({
+      message:
+        reminders.length > 0
+          ? `${reminders.length} e-mail(s) de relance CRA envoyé(s) avec succès.`
+          : 'Tous les consultants actifs ont déjà soumis leur CRA pour cette période.',
+      month: targetMonth,
+      sentCount: reminders.length,
+      sentAt,
+      reminders,
+    });
+  } catch (error) {
+    console.error('Erreur lors de l’envoi des relances (POST /api/admin/reminders) :', error);
+    return res.status(500).json({
+      error: 'Erreur interne du serveur lors de l’envoi des relances CRA.',
+    });
+  }
+});
+
+// ==========================================
 // GESTION DES ROUTES INCONNUES & DÉMARRAGE
 // ==========================================
 
@@ -810,4 +1305,4 @@ const gracefulShutdown = async () => {
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
 
-module.exports = { app, authenticateToken, authorizeRoles };
+module.exports = { app, authenticateToken, authorizeRoles, requireAdmin };
