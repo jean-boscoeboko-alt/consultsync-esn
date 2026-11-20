@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  ADMIN
+  CONSULTANT
+}
+
+enum MissionStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum CraDayType {
+  WORKED   // Travaillé
+  LEAVE    // Congé / Absence
+  ON_CALL  // Astreinte / Intercontrat
+}
+
+enum CraStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ExpenseCategory {
+  TRANSPORT
+  MEAL
+  ACCOMMODATION
+  EQUIPMENT_OTHER
+}
+
+enum AbsenceType {
+  CP            // Congés Payés
+  RTT           // RTT
+  SICK_LEAVE    // Arrêt Maladie
+  FAMILY_EVENT  // Événement familial
+  UNPAID        // Congé sans solde
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ==========================================
+// MODÈLES
+// ==========================================
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  firstName  String
+  lastName   String
+  jobTitle   String?
+  role       Role     @default(CONSULTANT)
+  cpBalance  Float    @default(25.0)
+  rttBalance Float    @default(10.0)
+  isActive   Boolean  @default(true)
+
+  missions   Mission[]
+  craEntries CraEntry[]
+  expenses   Expense[]
+  absences   Absence[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Mission {
+  id           String        @id @default(uuid())
+  clientName   String
+  title        String
+  description  String?
+  tjm          Float
+  startDate    DateTime
+  endDate      DateTime?
+  status       MissionStatus @default(ACTIVE)
+
+  consultantId String
+  consultant   User          @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  craEntries   CraEntry[]
+  expenses     Expense[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([consultantId])
+  @@map("missions")
+}
+
+model CraEntry {
+  id        String     @id @default(uuid())
+  date      DateTime   @db.Date
+  dayType   CraDayType @default(WORKED)
+  duration  Float      @default(1.0) // 1.0 = journée complète, 0.5 = demi-journée
+  status    CraStatus  @default(DRAFT)
+  comment   String?
+
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  missionId String?
+  mission   Mission?   @relation(fields: [missionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([missionId])
+  @@map("cra_entries")
+}
+
+model Expense {
+  id              String          @id @default(uuid())
+  title           String
+  amount          Float
+  category        ExpenseCategory
+  expenseDate     DateTime        @default(now())
+  receiptUrl      String?         // URL Object Storage (S3 / Scaleway)
+  status          ApprovalStatus  @default(PENDING)
+  rejectionReason String?
+
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  missionId       String?
+  mission         Mission?        @relation(fields: [missionId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([missionId])
+  @@index([status])
+  @@map("expenses")
+}
+
+model Absence {
+  id               String         @id @default(uuid())
+  type             AbsenceType
+  startDate        DateTime
+  endDate          DateTime
+  daysCount        Float
+  justificationUrl String?        // URL Object Storage (certificat médical, justificatif RH)
+  comment          String?
+  status           ApprovalStatus @default(PENDING)
+  rejectionReason  String?
+
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("absences")
+}
