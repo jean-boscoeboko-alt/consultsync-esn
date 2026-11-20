@@ -389,7 +389,7 @@
           <h2 class="text-2xl font-bold text-slate-900">Dashboard de Pilotage & Administration</h2>
         </div>
         <button onclick="openReminderModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
-          <i class="fa-solid fa-paper-plane"></i> Relancer les CRA en retard (3)
+          <i class="fa-solid fa-paper-plane"></i> <span id="reminder-cta-label">Relancer les CRA en retard (3)</span>
         </button>
       </div>
 
@@ -401,7 +401,7 @@
             <i class="fa-solid fa-euro-sign text-blue-600"></i>
           </div>
           <p id="kpi-ca" class="text-3xl font-bold text-slate-900">148 500 €</p>
-          <p class="text-xs text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-trend-up"></i> +8,4% vs mois dernier</p>
+          <p id="kpi-ca-sub" class="text-xs text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-trend-up"></i> +8,4% vs mois dernier</p>
         </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -409,8 +409,8 @@
             <span class="text-sm font-medium text-slate-500">TJM Moyen</span>
             <i class="fa-solid fa-tag text-emerald-600"></i>
           </div>
-          <p class="text-3xl font-bold text-slate-900">645 €</p>
-          <p class="text-xs text-slate-400 mt-1">Sur 14 missions actives</p>
+          <p id="kpi-tjm" class="text-3xl font-bold text-slate-900">645 €</p>
+          <p id="kpi-tjm-sub" class="text-xs text-slate-400 mt-1">Sur 14 missions actives</p>
         </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -418,8 +418,8 @@
             <span class="text-sm font-medium text-slate-500">TACE Global</span>
             <i class="fa-solid fa-chart-pie text-purple-600"></i>
           </div>
-          <p class="text-3xl font-bold text-slate-900">92,8 %</p>
-          <p class="text-xs text-emerald-600 font-medium mt-1">Objectif supérieur à 90% atteint</p>
+          <p id="kpi-tace" class="text-3xl font-bold text-slate-900">92,8 %</p>
+          <p id="kpi-tace-sub" class="text-xs text-emerald-600 font-medium mt-1">Objectif supérieur à 90% atteint</p>
         </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -440,7 +440,12 @@
         </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 class="font-bold text-slate-900 mb-4">Centre de Validation RH / Frais</h3>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-900">Centre de Validation RH / Frais</h3>
+            <span id="admin-val-sync-badge" class="hidden text-xs text-emerald-600 font-medium">
+              <i class="fa-solid fa-cloud-check mr-1"></i> Live
+            </span>
+          </div>
           <div id="validation-queue" class="space-y-4">
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center" id="val-item-1">
               <div>
@@ -585,10 +590,10 @@
   <div id="reminder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-slate-900">Relance Automatique CRA (3 consultants)</h3>
+        <h3 id="reminder-modal-title" class="text-lg font-bold text-slate-900">Relance Automatique CRA (3 consultants)</h3>
         <button onclick="closeReminderModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <p class="text-xs text-slate-500 mb-3">Destinataires en retard : <strong>Marc Vasseur, Julie Moreau, Karim Ziani</strong></p>
+      <p class="text-xs text-slate-500 mb-3">Destinataires en retard : <strong id="reminder-recipients-list">Marc Vasseur, Julie Moreau, Karim Ziani</strong></p>
       <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm text-slate-700 space-y-2 mb-4">
         <p class="text-xs text-slate-400">Objet : [Action requise] Saisie de votre CRA — Novembre 2026</p>
         <hr class="border-slate-200">
@@ -598,8 +603,8 @@
       </div>
       <div class="flex justify-end gap-3">
         <button onclick="closeReminderModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
-        <button onclick="sendReminders()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">
-          <i class="fa-solid fa-paper-plane mr-1"></i> Envoyer les 3 e-mails
+        <button id="send-reminders-btn" onclick="sendReminders()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex items-center gap-1.5">
+          <i class="fa-solid fa-paper-plane"></i> <span>Envoyer les 3 e-mails</span>
         </button>
       </div>
     </div>
@@ -647,6 +652,7 @@
         }
         return data;
       },
+      // Authentification
       async login(email, password) {
         return this.request('/auth/login', {
           method: 'POST',
@@ -656,6 +662,7 @@
       async getMe() {
         return this.request('/auth/me', { method: 'GET' });
       },
+      // Lot 2 : Espace Collaborateur
       async getCra(month) {
         const query = month ? `?month=${encodeURIComponent(month)}` : '';
         return this.request(`/cra${query}`, { method: 'GET' });
@@ -677,6 +684,25 @@
       },
       async createAbsence(payload) {
         return this.request('/absences', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      },
+      // Lot 3 : Espace Administration / Direction
+      async getAdminKpis() {
+        return this.request('/admin/kpis', { method: 'GET' });
+      },
+      async getAdminValidations() {
+        return this.request('/admin/validations', { method: 'GET' });
+      },
+      async reviewAdminValidation(type, id, status) {
+        return this.request(`/admin/validations/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status })
+        });
+      },
+      async sendAdminReminders(payload = {}) {
+        return this.request('/admin/reminders', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
@@ -754,6 +780,7 @@
         isAdmin = false;
         syncAuthUI();
         initCRAGrid();
+        resetAdminDemoUI();
         navigateTo('landing');
         showToast('Vous avez été déconnecté.');
       } else {
@@ -818,6 +845,9 @@
         document.getElementById('view-consultant').classList.add('hidden');
         document.getElementById('view-admin').classList.remove('hidden');
         initAdminChart();
+        if (apiClient.getToken()) {
+          loadAdminDashboardData();
+        }
       } else {
         document.getElementById('view-admin').classList.add('hidden');
         document.getElementById('view-consultant').classList.remove('hidden');
@@ -852,7 +882,6 @@
       });
       document.getElementById('tab-btn-' + tabName).className = 'consultant-tab pb-3 px-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap';
 
-      // Chargement API à la demande selon l'onglet
       if (apiClient.getToken()) {
         if (tabName === 'cra') loadCRAForSelectedMonth();
         if (tabName === 'frais') loadExpenses();
@@ -896,7 +925,6 @@
       const month = parseInt(mStr, 10) || 11;
       const daysInMonth = new Date(year, month, 0).getDate();
 
-      // Décalage du 1er jour (Lundi = 0 ... Dimanche = 6)
       const firstDayJs = new Date(year, month - 1, 1).getDay();
       const startOffset = (firstDayJs === 0) ? 6 : firstDayJs - 1;
 
@@ -1082,7 +1110,6 @@
       const fileInput = document.getElementById('exp-file');
       const fileName = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : null;
 
-      // Mode Démo Hors-ligne
       if (!apiClient.getToken()) {
         const amount = rawAmount.toFixed(2).replace('.', ',');
         const catLabel = EXPENSE_CAT_LABELS[category] || category;
@@ -1102,7 +1129,6 @@
         return;
       }
 
-      // Mode Connecté API
       const btn = document.getElementById('exp-submit-btn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Envoi...</span>';
@@ -1171,7 +1197,6 @@
     async function submitAbsence(e) {
       e.preventDefault();
 
-      // Mode Démo Hors-ligne
       if (!apiClient.getToken()) {
         e.target.reset();
         showToast('Demande d\'absence enregistrée avec justificatif');
@@ -1204,7 +1229,6 @@
           justificationUrl: fileName ? `uploads/${fileName}` : null
         });
 
-        // Mise à jour immédiate des soldes si renvoyés, sinon via /api/auth/me
         if (res && res.user) {
           updateBalancesUI(res.user);
         } else {
@@ -1226,14 +1250,220 @@
     }
 
     // ==========================================
-    // VUE 3 : ADMIN & MODALES
+    // VUE 3 : ADMIN (KPIs, VALIDATIONS, RELANCES)
     // ==========================================
-    function processValidation(id, approved) {
-      const item = document.getElementById(id);
-      if (item) item.remove();
-      const pendingEl = document.getElementById('kpi-pending');
-      pendingEl.textContent = Math.max(0, parseInt(pendingEl.textContent) - 1);
-      showToast(approved ? 'Demande approuvée avec succès' : 'Demande rejetée');
+    const ABSENCE_TYPE_LABELS = {
+      CP: 'CONGÉS PAYÉS',
+      RTT: 'RTT',
+      SICK_LEAVE: 'ARRÊT MALADIE',
+      FAMILY_EVENT: 'ÉVÉNEMENT FAMILIAL',
+      UNPAID: 'CONGÉ SANS SOLDE'
+    };
+
+    function formatCurrencyFr(amount) {
+      const num = Number(amount || 0);
+      return num.toLocaleString('fr-FR', {
+        minimumFractionDigits: num % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+      }) + ' €';
+    }
+
+    function resetAdminDemoUI() {
+      document.getElementById('kpi-ca').textContent = '148 500 €';
+      document.getElementById('kpi-ca-sub').innerHTML = '<i class="fa-solid fa-arrow-trend-up"></i> +8,4% vs mois dernier';
+      document.getElementById('kpi-tjm').textContent = '645 €';
+      document.getElementById('kpi-tjm-sub').textContent = 'Sur 14 missions actives';
+      document.getElementById('kpi-tace').textContent = '92,8 %';
+      document.getElementById('kpi-tace-sub').textContent = 'Objectif supérieur à 90% atteint';
+      document.getElementById('kpi-pending').textContent = '2';
+      document.getElementById('admin-val-sync-badge').classList.add('hidden');
+    }
+
+    async function loadAdminDashboardData() {
+      const user = apiClient.getUser();
+      if (!apiClient.getToken() || !user || user.role !== 'ADMIN') return;
+
+      await Promise.all([
+        loadAdminKPIs(),
+        loadAdminValidations()
+      ]);
+    }
+
+    async function loadAdminKPIs() {
+      try {
+        const res = await apiClient.getAdminKpis();
+        const kpis = res.kpis || res;
+
+        const caValue = kpis.monthlyRevenue ?? kpis.ca ?? kpis.revenue;
+        if (typeof caValue === 'number') {
+          document.getElementById('kpi-ca').textContent = formatCurrencyFr(caValue);
+        }
+        if (typeof kpis.revenueGrowth === 'number') {
+          const sign = kpis.revenueGrowth >= 0 ? '+' : '';
+          document.getElementById('kpi-ca-sub').innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> ${sign}${kpis.revenueGrowth.toFixed(1).replace('.', ',')}% vs mois dernier`;
+        }
+
+        const tjmValue = kpis.averageTjm ?? kpis.tjm ?? kpis.avgTjm;
+        if (typeof tjmValue === 'number') {
+          document.getElementById('kpi-tjm').textContent = formatCurrencyFr(tjmValue);
+        }
+        if (typeof kpis.activeMissionsCount === 'number') {
+          document.getElementById('kpi-tjm-sub').textContent = `Sur ${kpis.activeMissionsCount} mission${kpis.activeMissionsCount > 1 ? 's' : ''} active${kpis.activeMissionsCount > 1 ? 's' : ''}`;
+        }
+
+        const taceValue = kpis.tace ?? kpis.globalTace;
+        if (typeof taceValue === 'number') {
+          document.getElementById('kpi-tace').textContent = `${taceValue.toFixed(1).replace('.', ',')} %`;
+          document.getElementById('kpi-tace-sub').textContent = taceValue >= 90
+            ? 'Objectif supérieur à 90% atteint'
+            : 'Objectif cible : 90,0 %';
+        }
+
+        const pendingValue = kpis.pendingValidations ?? kpis.pendingCount;
+        if (typeof pendingValue === 'number') {
+          document.getElementById('kpi-pending').textContent = String(pendingValue);
+        }
+
+        // Mise à jour optionnelle du graphique si le serveur renvoie une série mensuelle
+        const series = kpis.monthlyChart || kpis.chartData;
+        if (chartInstance && Array.isArray(series) && series.length > 0) {
+          chartInstance.data.labels = series.map(item => item.label || item.month);
+          chartInstance.data.datasets[0].data = series.map(item => Number(item.value ?? item.ca ?? 0));
+          chartInstance.update();
+        }
+      } catch (err) {
+        showToast('Erreur chargement des KPIs : ' + err.message);
+      }
+    }
+
+    function normalizeValidationItems(rawResponse) {
+      if (Array.isArray(rawResponse)) {
+        return rawResponse.map(item => ({
+          ...item,
+          itemType: (item.itemType || item.type || (item.amount !== undefined ? 'expense' : 'absence')).toLowerCase()
+        }));
+      }
+
+      const items = [];
+      const expenses = rawResponse.expenses || [];
+      const absences = rawResponse.absences || [];
+      const generic = rawResponse.validations || rawResponse.items || [];
+
+      generic.forEach(item => {
+        items.push({
+          ...item,
+          itemType: (item.itemType || item.type || (item.amount !== undefined ? 'expense' : 'absence')).toLowerCase()
+        });
+      });
+
+      expenses.forEach(exp => {
+        items.push({ ...exp, itemType: 'expense' });
+      });
+
+      absences.forEach(abs => {
+        items.push({ ...abs, itemType: 'absence' });
+      });
+
+      return items;
+    }
+
+    function renderAdminValidations(items) {
+      const queue = document.getElementById('validation-queue');
+      document.getElementById('kpi-pending').textContent = String(items.length);
+
+      if (!items || items.length === 0) {
+        queue.innerHTML = `
+          <div class="p-6 text-center rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-400">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-2 block"></i>
+            Aucune demande en attente de validation.
+          </div>`;
+        return;
+      }
+
+      queue.innerHTML = items.map(item => {
+        const isExpense = item.itemType === 'expense';
+        const domId = `api-val-${item.itemType}-${item.id}`;
+        const userName = getUserDisplayName(item.user) || item.userName || 'Collaborateur';
+
+        let headerBadge = '';
+        let subtitle = '';
+
+        if (isExpense) {
+          const amountStr = Number(item.amount || 0).toFixed(2).replace('.', ',');
+          headerBadge = `<p class="text-xs font-bold text-blue-600">NOTE DE FRAIS • ${amountStr} €</p>`;
+          subtitle = item.title || EXPENSE_CAT_LABELS[item.category] || 'Frais professionnel';
+        } else {
+          const label = ABSENCE_TYPE_LABELS[item.type] || item.type || 'ABSENCE';
+          const daysStr = item.daysCount ? `${item.daysCount} JOUR${item.daysCount > 1 ? 'S' : ''}` : '';
+          headerBadge = `<p class="text-xs font-bold text-purple-600">${label}${daysStr ? ' • ' + daysStr : ''}</p>`;
+          const startStr = formatDateFr(item.startDate);
+          const endStr = item.endDate ? formatDateFr(item.endDate) : startStr;
+          subtitle = startStr === endStr ? `Le ${startStr}` : `Du ${startStr} au ${endStr}`;
+        }
+
+        return `
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center fade-in" id="${domId}">
+            <div>
+              ${headerBadge}
+              <p class="text-sm font-semibold text-slate-800">${userName}</p>
+              <p class="text-xs text-slate-500">${subtitle}</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="processValidation('${domId}', true, '${item.itemType}', '${item.id}')" class="text-emerald-600 bg-emerald-100 hover:bg-emerald-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Approuver">
+                <i class="fa-solid fa-check"></i>
+              </button>
+              <button onclick="processValidation('${domId}', false, '${item.itemType}', '${item.id}')" class="text-rose-600 bg-rose-100 hover:bg-rose-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Rejeter">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadAdminValidations() {
+      try {
+        const res = await apiClient.getAdminValidations();
+        const items = normalizeValidationItems(res);
+        renderAdminValidations(items);
+        document.getElementById('admin-val-sync-badge').classList.remove('hidden');
+      } catch (err) {
+        showToast('Erreur chargement des validations : ' + err.message);
+      }
+    }
+
+    async function processValidation(domId, approved, itemType = null, itemId = null) {
+      const itemEl = document.getElementById(domId);
+
+      // Mode Démo Hors-ligne
+      if (!apiClient.getToken() || !itemType || !itemId) {
+        if (itemEl) itemEl.remove();
+        const pendingEl = document.getElementById('kpi-pending');
+        pendingEl.textContent = Math.max(0, parseInt(pendingEl.textContent, 10) - 1);
+        showToast(approved ? 'Demande approuvée avec succès' : 'Demande rejetée');
+        return;
+      }
+
+      // Mode Connecté API : PATCH /api/admin/validations/:type/:id
+      const buttons = itemEl ? itemEl.querySelectorAll('button') : [];
+      buttons.forEach(b => { b.disabled = true; b.classList.add('opacity-50'); });
+
+      try {
+        const status = approved ? 'APPROVED' : 'REJECTED';
+        await apiClient.reviewAdminValidation(itemType, itemId, status);
+
+        if (itemEl) itemEl.remove();
+        const pendingEl = document.getElementById('kpi-pending');
+        const nextCount = Math.max(0, parseInt(pendingEl.textContent, 10) - 1);
+        pendingEl.textContent = String(nextCount);
+
+        if (nextCount === 0) {
+          renderAdminValidations([]);
+        }
+        showToast(approved ? 'Demande approuvée et enregistrée !' : 'Demande rejetée.');
+      } catch (err) {
+        buttons.forEach(b => { b.disabled = false; b.classList.remove('opacity-50'); });
+        showToast('Erreur lors de la validation : ' + err.message);
+      }
     }
 
     function initAdminChart() {
@@ -1258,6 +1488,7 @@
       });
     }
 
+    // Modales & Relances
     function openDemoModal() { document.getElementById('demo-modal').classList.remove('hidden'); }
     function closeDemoModal() { document.getElementById('demo-modal').classList.add('hidden'); }
     function submitDemoForm(e) {
@@ -1268,9 +1499,31 @@
 
     function openReminderModal() { document.getElementById('reminder-modal').classList.remove('hidden'); }
     function closeReminderModal() { document.getElementById('reminder-modal').classList.add('hidden'); }
-    function sendReminders() {
-      closeReminderModal();
-      showToast('3 e-mails de relance CRA envoyés automatiquement');
+
+    async function sendReminders() {
+      // Mode Démo Hors-ligne
+      if (!apiClient.getToken()) {
+        closeReminderModal();
+        showToast('3 e-mails de relance CRA envoyés automatiquement');
+        return;
+      }
+
+      // Mode Connecté API : POST /api/admin/reminders
+      const btn = document.getElementById('send-reminders-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Envoi...</span>';
+
+      try {
+        const res = await apiClient.sendAdminReminders({ month: '2026-11' });
+        const sentCount = res.sentCount ?? res.count ?? 3;
+        closeReminderModal();
+        showToast(res.message || `${sentCount} e-mail(s) de relance CRA envoyé(s) avec succès !`);
+      } catch (err) {
+        showToast('Erreur lors de l’envoi des relances : ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>Envoyer les 3 e-mails</span>';
+      }
     }
 
     function showToast(message) {
