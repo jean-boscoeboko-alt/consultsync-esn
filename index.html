@@ -159,7 +159,7 @@
       <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-slate-900">Espace Collaborateur — <span id="consultant-display-name">Thomas Laurent</span></h2>
-          <p class="text-sm text-slate-500">Consultant Full-Stack Senior • Mission actuelle : <span class="font-medium text-slate-700">FinanceData</span></p>
+          <p class="text-sm text-slate-500"><span id="consultant-job-title">Consultant Full-Stack Senior</span> • Mission actuelle : <span class="font-medium text-slate-700">FinanceData</span></p>
         </div>
       </div>
 
@@ -183,21 +183,21 @@
       <div id="c-tab-cra" class="c-panel bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div class="flex items-center gap-4">
-            <select id="cra-month" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium bg-slate-50">
-              <option>Novembre 2026</option>
-              <option>Octobre 2026</option>
-              <option>Décembre 2026</option>
+            <select id="cra-month" onchange="loadCRAForSelectedMonth()" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium bg-slate-50">
+              <option value="2026-11">Novembre 2026</option>
+              <option value="2026-10">Octobre 2026</option>
+              <option value="2026-12">Décembre 2026</option>
             </select>
             <span class="text-sm font-semibold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">
               Total jours travaillés : <span id="cra-total-days">18</span> jours
             </span>
           </div>
-          <div class="flex items-center gap-4 text-xs">
+          <div class="flex flex-wrap items-center gap-4 text-xs">
             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-200 inline-block"></span> Travaillé</span>
             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-200 inline-block"></span> Congé</span>
             <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-200 inline-block"></span> Astreinte</span>
-            <button onclick="showToast('Votre CRA mensuel a été transmis pour validation !')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-              Valider mon CRA
+            <button id="cra-submit-btn" onclick="submitCRA()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+              <span>Valider mon CRA</span>
             </button>
           </div>
         </div>
@@ -222,10 +222,10 @@
               <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">Catégorie</label>
                 <select id="exp-cat" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                  <option>Transport</option>
-                  <option>Repas</option>
-                  <option>Hébergement</option>
-                  <option>Matériel / Divers</option>
+                  <option value="TRANSPORT">Transport</option>
+                  <option value="MEAL">Repas</option>
+                  <option value="ACCOMMODATION">Hébergement</option>
+                  <option value="EQUIPMENT_OTHER">Matériel / Divers</option>
                 </select>
               </div>
             </div>
@@ -234,18 +234,21 @@
               <label class="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl p-4 text-center block cursor-pointer transition">
                 <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-xl mb-1"></i>
                 <p id="exp-file-label" class="text-xs text-slate-500">Cliquez pour joindre un fichier</p>
-                <input type="file" class="hidden" onchange="previewFileName(this, 'exp-file-label')">
+                <input type="file" id="exp-file" class="hidden" onchange="previewFileName(this, 'exp-file-label')">
               </label>
             </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition">
-              Soumettre la note de frais
+            <button type="submit" id="exp-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+              <span>Soumettre la note de frais</span>
             </button>
           </form>
         </div>
 
         <div class="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div class="p-6 border-b border-slate-100">
+          <div class="p-6 border-b border-slate-100 flex justify-between items-center">
             <h3 class="font-bold text-slate-900">Historique des frais & factures</h3>
+            <span id="expenses-sync-badge" class="hidden text-xs text-emerald-600 font-medium">
+              <i class="fa-solid fa-cloud-check mr-1"></i> Synchronisé
+            </span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
@@ -285,7 +288,7 @@
           <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p class="text-sm text-slate-500">Solde Congés Payés (CP)</p>
-              <p class="text-3xl font-bold text-slate-900 mt-1">14,5 jours</p>
+              <p class="text-3xl font-bold text-slate-900 mt-1"><span id="balance-cp">14,5</span> jours</p>
             </div>
             <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
               <i class="fa-solid fa-sun"></i>
@@ -294,7 +297,7 @@
           <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p class="text-sm text-slate-500">Solde RTT acquis</p>
-              <p class="text-3xl font-bold text-slate-900 mt-1">6,0 jours</p>
+              <p class="text-3xl font-bold text-slate-900 mt-1"><span id="balance-rtt">6,0</span> jours</p>
             </div>
             <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl">
               <i class="fa-solid fa-clock"></i>
@@ -304,26 +307,30 @@
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="font-bold text-slate-900 mb-4">Déclarer une absence / Déposer un justificatif</h3>
-          <form onsubmit="submitAbsence(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <form onsubmit="submitAbsence(event)" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div>
               <label class="block text-xs font-medium text-slate-600 mb-1">Type d'absence</label>
-              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Congés Payés (CP)</option>
-                <option>RTT</option>
-                <option>Arrêt Maladie</option>
-                <option>Événement familial</option>
+              <select id="abs-type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="CP">Congés Payés (CP)</option>
+                <option value="RTT">RTT</option>
+                <option value="SICK_LEAVE">Arrêt Maladie</option>
+                <option value="FAMILY_EVENT">Événement familial</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-600 mb-1">Date de début</label>
-              <input type="date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <input type="date" id="abs-start-date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Date de fin</label>
+              <input type="date" id="abs-end-date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-600 mb-1">Justificatif (Arrêt, Certificat)</label>
-              <input type="file" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
+              <input type="file" id="abs-file" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
             </div>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-semibold transition">
-              Envoyer la demande
+            <button type="submit" id="abs-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2">
+              <span>Envoyer la demande</span>
             </button>
           </form>
         </div>
@@ -645,6 +652,34 @@
           method: 'POST',
           body: JSON.stringify({ email, password })
         });
+      },
+      async getMe() {
+        return this.request('/auth/me', { method: 'GET' });
+      },
+      async getCra(month) {
+        const query = month ? `?month=${encodeURIComponent(month)}` : '';
+        return this.request(`/cra${query}`, { method: 'GET' });
+      },
+      async saveCra(payload) {
+        return this.request('/cra', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      },
+      async getExpenses() {
+        return this.request('/expenses', { method: 'GET' });
+      },
+      async createExpense(payload) {
+        return this.request('/expenses', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      },
+      async createAbsence(payload) {
+        return this.request('/absences', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
       }
     };
 
@@ -654,6 +689,24 @@
     let isAdmin = false;
     let chartInstance = null;
 
+    function getUserDisplayName(user) {
+      if (!user) return '';
+      if (user.firstName || user.lastName) {
+        return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      }
+      return user.name || user.fullName || user.email || '';
+    }
+
+    function updateBalancesUI(user) {
+      if (!user) return;
+      if (typeof user.cpBalance === 'number') {
+        document.getElementById('balance-cp').textContent = user.cpBalance.toFixed(1).replace('.', ',');
+      }
+      if (typeof user.rttBalance === 'number') {
+        document.getElementById('balance-rtt').textContent = user.rttBalance.toFixed(1).replace('.', ',');
+      }
+    }
+
     function syncAuthUI() {
       const user = apiClient.getUser();
       const badge = document.getElementById('role-badge');
@@ -662,7 +715,7 @@
 
       if (user) {
         isAdmin = (user.role === 'ADMIN');
-        const fullName = user.name || user.fullName || user.email;
+        const fullName = getUserDisplayName(user);
         badge.textContent = isAdmin ? `Connecté : ${fullName} (Admin)` : `Connecté : ${fullName}`;
         badge.className = isAdmin
           ? 'hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700'
@@ -675,6 +728,10 @@
           document.getElementById('admin-display-name').textContent = fullName;
         } else {
           document.getElementById('consultant-display-name').textContent = fullName;
+          if (user.jobTitle) {
+            document.getElementById('consultant-job-title').textContent = user.jobTitle;
+          }
+          updateBalancesUI(user);
         }
       } else {
         badge.textContent = isAdmin ? 'Mode Démo : Admin' : 'Mode Démo : Consultant';
@@ -684,6 +741,10 @@
 
         authBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm';
         authBtnText.textContent = 'Se connecter';
+        document.getElementById('consultant-display-name').textContent = 'Thomas Laurent';
+        document.getElementById('consultant-job-title').textContent = 'Consultant Full-Stack Senior';
+        document.getElementById('balance-cp').textContent = '14,5';
+        document.getElementById('balance-rtt').textContent = '6,0';
       }
     }
 
@@ -692,6 +753,7 @@
         apiClient.clearSession();
         isAdmin = false;
         syncAuthUI();
+        initCRAGrid();
         navigateTo('landing');
         showToast('Vous avez été déconnecté.');
       } else {
@@ -725,7 +787,7 @@
         syncAuthUI();
         closeLoginModal();
         navigateToWorkspace();
-        showToast(`Bienvenue ${result.user.name || result.user.email} !`);
+        showToast(`Bienvenue ${getUserDisplayName(result.user)} !`);
       } catch (err) {
         errorBox.textContent = err.message || 'Identifiants incorrects ou serveur inaccessible.';
         errorBox.classList.remove('hidden');
@@ -759,6 +821,10 @@
       } else {
         document.getElementById('view-admin').classList.add('hidden');
         document.getElementById('view-consultant').classList.remove('hidden');
+        if (apiClient.getToken()) {
+          loadCRAForSelectedMonth();
+          refreshUserBalances();
+        }
       }
     }
 
@@ -785,42 +851,118 @@
         btn.className = 'consultant-tab pb-3 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap';
       });
       document.getElementById('tab-btn-' + tabName).className = 'consultant-tab pb-3 px-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap';
+
+      // Chargement API à la demande selon l'onglet
+      if (apiClient.getToken()) {
+        if (tabName === 'cra') loadCRAForSelectedMonth();
+        if (tabName === 'frais') loadExpenses();
+        if (tabName === 'absences') refreshUserBalances();
+      }
     }
 
-    // Grille CRA
-    function initCRAGrid() {
+    // ==========================================
+    // MODULE 2.1 : GRILLE CRA (HORS-LIGNE & API)
+    // ==========================================
+    const STATE_TO_API_DAY_TYPE = {
+      worked: 'WORKED',
+      leave: 'LEAVE',
+      oncall: 'ON_CALL'
+    };
+
+    const API_DAY_TYPE_TO_STATE = {
+      WORKED: 'worked',
+      LEAVE: 'leave',
+      ON_CALL: 'oncall'
+    };
+
+    function getStateStyle(state) {
+      if (state === 'weekend') return 'bg-slate-100 text-slate-400 cursor-not-allowed';
+      if (state === 'leave') return 'bg-rose-100 text-rose-700 cursor-pointer hover:opacity-80';
+      if (state === 'oncall') return 'bg-amber-100 text-amber-700 cursor-pointer hover:opacity-80';
+      return 'bg-emerald-100 text-emerald-700 cursor-pointer hover:opacity-80';
+    }
+
+    function renderCRAGrid(monthStr = '2026-11', entriesMap = null) {
       const grid = document.getElementById('cra-grid');
-      const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-      days.forEach(d => {
+      grid.innerHTML = '';
+
+      const daysHeader = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      daysHeader.forEach(d => {
         grid.innerHTML += `<div class="text-center text-xs font-bold text-slate-400 py-1">${d}</div>`;
       });
 
-      for (let i = 1; i <= 30; i++) {
-        const isWeekend = (i % 7 === 6 || i % 7 === 0);
-        const state = isWeekend ? 'weekend' : 'worked';
-        const colorClass = isWeekend ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-emerald-100 text-emerald-700 cursor-pointer hover:opacity-80';
+      const [yearStr, mStr] = monthStr.split('-');
+      const year = parseInt(yearStr, 10) || 2026;
+      const month = parseInt(mStr, 10) || 11;
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      // Décalage du 1er jour (Lundi = 0 ... Dimanche = 6)
+      const firstDayJs = new Date(year, month - 1, 1).getDay();
+      const startOffset = (firstDayJs === 0) ? 6 : firstDayJs - 1;
+
+      for (let empty = 0; empty < startOffset; empty++) {
+        grid.innerHTML += `<div class="aspect-square"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(year, month - 1, day);
+        const dayOfWeek = dateObj.getDay();
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        let state = isWeekend ? 'weekend' : 'worked';
+        if (!isWeekend && entriesMap && entriesMap[isoDate]) {
+          state = entriesMap[isoDate];
+        }
+
         grid.innerHTML += `
-          <div onclick="cycleDayState(this)" data-state="${state}" class="aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition ${colorClass}">
-            ${i}
+          <div onclick="cycleDayState(this)" data-day="${day}" data-date="${isoDate}" data-state="${state}" class="aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition ${getStateStyle(state)}">
+            ${day}
           </div>`;
       }
       updateCRACount();
+    }
+
+    function initCRAGrid() {
+      const monthSelect = document.getElementById('cra-month');
+      renderCRAGrid(monthSelect ? monthSelect.value : '2026-11');
+    }
+
+    async function loadCRAForSelectedMonth() {
+      const month = document.getElementById('cra-month').value;
+      if (!apiClient.getToken()) {
+        renderCRAGrid(month);
+        return;
+      }
+
+      try {
+        const res = await apiClient.getCra(month);
+        const entries = Array.isArray(res) ? res : (res.entries || res.craEntries || res.data || []);
+        const entriesMap = {};
+
+        entries.forEach(entry => {
+          const dateKey = String(entry.date).slice(0, 10);
+          const mappedState = API_DAY_TYPE_TO_STATE[entry.dayType] || 'worked';
+          entriesMap[dateKey] = mappedState;
+        });
+
+        renderCRAGrid(month, entriesMap);
+      } catch (err) {
+        renderCRAGrid(month);
+        showToast('Impossible de charger le CRA serveur : ' + err.message);
+      }
     }
 
     function cycleDayState(el) {
       const current = el.getAttribute('data-state');
       if (current === 'weekend') return;
 
-      if (current === 'worked') {
-        el.setAttribute('data-state', 'leave');
-        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-rose-100 text-rose-700 cursor-pointer';
-      } else if (current === 'leave') {
-        el.setAttribute('data-state', 'oncall');
-        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-amber-100 text-amber-700 cursor-pointer';
-      } else {
-        el.setAttribute('data-state', 'worked');
-        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-emerald-100 text-emerald-700 cursor-pointer';
-      }
+      let nextState = 'worked';
+      if (current === 'worked') nextState = 'leave';
+      else if (current === 'leave') nextState = 'oncall';
+
+      el.setAttribute('data-state', nextState);
+      el.className = `aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition ${getStateStyle(nextState)}`;
       updateCRACount();
     }
 
@@ -829,26 +971,160 @@
       document.getElementById('cra-total-days').textContent = worked;
     }
 
-    // Notes de frais
-    function addExpense(e) {
-      e.preventDefault();
-      const title = document.getElementById('exp-title').value;
-      const amount = parseFloat(document.getElementById('exp-amount').value).toFixed(2).replace('.', ',');
-      const cat = document.getElementById('exp-cat').value;
+    async function submitCRA() {
+      if (!apiClient.getToken()) {
+        showToast('Votre CRA mensuel a été transmis pour validation !');
+        return;
+      }
 
+      const month = document.getElementById('cra-month').value;
+      const dayCells = document.querySelectorAll('#cra-grid [data-date]');
+      const entries = [];
+
+      dayCells.forEach(cell => {
+        const state = cell.getAttribute('data-state');
+        if (state && state !== 'weekend') {
+          entries.push({
+            date: cell.getAttribute('data-date'),
+            dayType: STATE_TO_API_DAY_TYPE[state] || 'WORKED',
+            duration: 1.0,
+            status: 'SUBMITTED'
+          });
+        }
+      });
+
+      const btn = document.getElementById('cra-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Envoi...</span>';
+
+      try {
+        await apiClient.saveCra({ month, status: 'SUBMITTED', entries });
+        showToast('Votre CRA mensuel a été enregistré et soumis !');
+      } catch (err) {
+        showToast('Erreur lors de l’envoi du CRA : ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Valider mon CRA</span>';
+      }
+    }
+
+    // ==========================================
+    // MODULE 2.2 : NOTES DE FRAIS
+    // ==========================================
+    const EXPENSE_CAT_LABELS = {
+      TRANSPORT: 'Transport',
+      MEAL: 'Repas',
+      ACCOMMODATION: 'Hébergement',
+      EQUIPMENT_OTHER: 'Matériel / Divers'
+    };
+
+    function getStatusBadgeHTML(status) {
+      const norm = String(status || 'PENDING').toUpperCase();
+      if (norm === 'APPROVED') {
+        return '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Approuvé</span>';
+      }
+      if (norm === 'REJECTED') {
+        return '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">Rejeté</span>';
+      }
+      return '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">En attente</span>';
+    }
+
+    function formatDateFr(isoString) {
+      if (!isoString) return new Date().toLocaleDateString('fr-FR');
+      const d = new Date(isoString);
+      return Number.isNaN(d.getTime()) ? isoString : d.toLocaleDateString('fr-FR');
+    }
+
+    function renderExpensesTable(expenses) {
       const tbody = document.getElementById('expenses-table-body');
-      const row = `
-        <tr class="fade-in bg-blue-50/30">
-          <td class="px-6 py-4 text-slate-500">20/11/2026</td>
-          <td class="px-6 py-4 font-medium">${title}</td>
-          <td class="px-6 py-4">${cat}</td>
-          <td class="px-6 py-4 font-semibold">${amount} €</td>
-          <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">En attente</span></td>
-        </tr>`;
-      tbody.insertAdjacentHTML('afterbegin', row);
-      e.target.reset();
-      document.getElementById('exp-file-label').textContent = 'Cliquez pour joindre un fichier';
-      showToast('Note de frais ajoutée et transmise au manager');
+      if (!expenses || expenses.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-6 py-8 text-center text-slate-400 text-sm">
+              Aucune note de frais enregistrée pour le moment.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = expenses.map(exp => {
+        const formattedAmount = Number(exp.amount || 0).toFixed(2).replace('.', ',');
+        const catLabel = EXPENSE_CAT_LABELS[exp.category] || exp.category || 'Divers';
+        const dateStr = formatDateFr(exp.expenseDate || exp.createdAt);
+        return `
+          <tr class="fade-in">
+            <td class="px-6 py-4 text-slate-500">${dateStr}</td>
+            <td class="px-6 py-4 font-medium">${exp.title}</td>
+            <td class="px-6 py-4">${catLabel}</td>
+            <td class="px-6 py-4 font-semibold">${formattedAmount} €</td>
+            <td class="px-6 py-4">${getStatusBadgeHTML(exp.status)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    async function loadExpenses() {
+      if (!apiClient.getToken()) return;
+      try {
+        const res = await apiClient.getExpenses();
+        const expenses = Array.isArray(res) ? res : (res.expenses || res.data || []);
+        renderExpensesTable(expenses);
+        document.getElementById('expenses-sync-badge').classList.remove('hidden');
+      } catch (err) {
+        showToast('Erreur chargement notes de frais : ' + err.message);
+      }
+    }
+
+    async function addExpense(e) {
+      e.preventDefault();
+      const title = document.getElementById('exp-title').value.trim();
+      const rawAmount = parseFloat(document.getElementById('exp-amount').value);
+      const category = document.getElementById('exp-cat').value;
+      const fileInput = document.getElementById('exp-file');
+      const fileName = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : null;
+
+      // Mode Démo Hors-ligne
+      if (!apiClient.getToken()) {
+        const amount = rawAmount.toFixed(2).replace('.', ',');
+        const catLabel = EXPENSE_CAT_LABELS[category] || category;
+        const tbody = document.getElementById('expenses-table-body');
+        const row = `
+          <tr class="fade-in bg-blue-50/30">
+            <td class="px-6 py-4 text-slate-500">20/11/2026</td>
+            <td class="px-6 py-4 font-medium">${title}</td>
+            <td class="px-6 py-4">${catLabel}</td>
+            <td class="px-6 py-4 font-semibold">${amount} €</td>
+            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">En attente</span></td>
+          </tr>`;
+        tbody.insertAdjacentHTML('afterbegin', row);
+        e.target.reset();
+        document.getElementById('exp-file-label').textContent = 'Cliquez pour joindre un fichier';
+        showToast('Note de frais ajoutée et transmise au manager');
+        return;
+      }
+
+      // Mode Connecté API
+      const btn = document.getElementById('exp-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Envoi...</span>';
+
+      try {
+        await apiClient.createExpense({
+          title,
+          amount: rawAmount,
+          category,
+          expenseDate: new Date().toISOString(),
+          receiptUrl: fileName ? `uploads/${fileName}` : null
+        });
+        e.target.reset();
+        document.getElementById('exp-file-label').textContent = 'Cliquez pour joindre un fichier';
+        await loadExpenses();
+        showToast('Note de frais enregistrée sur le serveur !');
+      } catch (err) {
+        showToast('Erreur création note de frais : ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Soumettre la note de frais</span>';
+      }
     }
 
     function previewFileName(input, labelId) {
@@ -857,17 +1133,101 @@
       }
     }
 
-    function submitAbsence(e) {
+    // ==========================================
+    // MODULE 2.3 : ABSENCES & SOLDES
+    // ==========================================
+    function calculateBusinessDays(startStr, endStr) {
+      const start = new Date(startStr);
+      const end = new Date(endStr);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+        return 1.0;
+      }
+      let count = 0;
+      const cur = new Date(start);
+      while (cur <= end) {
+        const day = cur.getDay();
+        if (day !== 0 && day !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return Math.max(1.0, count);
+    }
+
+    async function refreshUserBalances() {
+      if (!apiClient.getToken()) return;
+      try {
+        const res = await apiClient.getMe();
+        const freshUser = res.user || res;
+        if (freshUser) {
+          const currentUser = apiClient.getUser() || {};
+          const mergedUser = { ...currentUser, ...freshUser };
+          apiClient.setSession(apiClient.getToken(), mergedUser);
+          updateBalancesUI(mergedUser);
+        }
+      } catch (err) {
+        console.warn('Rafraîchissement des soldes ignoré :', err.message);
+      }
+    }
+
+    async function submitAbsence(e) {
       e.preventDefault();
-      e.target.reset();
-      showToast('Demande d\'absence enregistrée avec justificatif');
+
+      // Mode Démo Hors-ligne
+      if (!apiClient.getToken()) {
+        e.target.reset();
+        showToast('Demande d\'absence enregistrée avec justificatif');
+        return;
+      }
+
+      const type = document.getElementById('abs-type').value;
+      const startDate = document.getElementById('abs-start-date').value;
+      const endDate = document.getElementById('abs-end-date').value || startDate;
+
+      if (new Date(endDate) < new Date(startDate)) {
+        showToast('La date de fin doit être postérieure ou égale à la date de début.');
+        return;
+      }
+
+      const daysCount = calculateBusinessDays(startDate, endDate);
+      const fileInput = document.getElementById('abs-file');
+      const fileName = (fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : null;
+
+      const btn = document.getElementById('abs-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Envoi...</span>';
+
+      try {
+        const res = await apiClient.createAbsence({
+          type,
+          startDate: new Date(startDate).toISOString(),
+          endDate: new Date(endDate).toISOString(),
+          daysCount,
+          justificationUrl: fileName ? `uploads/${fileName}` : null
+        });
+
+        // Mise à jour immédiate des soldes si renvoyés, sinon via /api/auth/me
+        if (res && res.user) {
+          updateBalancesUI(res.user);
+        } else {
+          await refreshUserBalances();
+        }
+
+        e.target.reset();
+        showToast(`Demande d'absence (${daysCount} j) envoyée avec succès !`);
+      } catch (err) {
+        showToast('Erreur demande d\'absence : ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Envoyer la demande</span>';
+      }
     }
 
     function toggleDocs(id) {
       document.getElementById(id).classList.toggle('hidden');
     }
 
-    // Validation Admin
+    // ==========================================
+    // VUE 3 : ADMIN & MODALES
+    // ==========================================
     function processValidation(id, approved) {
       const item = document.getElementById(id);
       if (item) item.remove();
@@ -876,7 +1236,6 @@
       showToast(approved ? 'Demande approuvée avec succès' : 'Demande rejetée');
     }
 
-    // Graphique Admin
     function initAdminChart() {
       if (chartInstance) return;
       const ctx = document.getElementById('adminChart').getContext('2d');
@@ -899,7 +1258,6 @@
       });
     }
 
-    // Modales & Toasts
     function openDemoModal() { document.getElementById('demo-modal').classList.remove('hidden'); }
     function closeDemoModal() { document.getElementById('demo-modal').classList.add('hidden'); }
     function submitDemoForm(e) {
