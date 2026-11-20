@@ -52,13 +52,16 @@
         <button onclick="openDemoModal()" class="hover:text-blue-600 transition">Demander une Démo</button>
       </nav>
 
-      <!-- Switch Rôle -->
-      <div class="flex items-center gap-3">
-        <span id="role-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-          Rôle : Consultant
+      <!-- Actions Authentification & Switch Rôle -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <span id="role-badge" class="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+          Mode Démo : Consultant
         </span>
-        <button onclick="toggleRole()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2 shadow-sm">
-          <i class="fa-solid fa-repeat"></i> Switch Rôle
+        <button onclick="toggleRole()" title="Basculer rapidement entre les vues en mode démo" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+          <i class="fa-solid fa-repeat"></i> <span class="hidden lg:inline">Switch Démo</span>
+        </button>
+        <button id="auth-btn" onclick="handleAuthButtonClick()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-right-to-bracket"></i> <span id="auth-btn-text">Se connecter</span>
         </button>
       </div>
     </div>
@@ -71,7 +74,6 @@
     <!-- VUE 1 : LANDING PAGE                       -->
     <!-- ========================================== -->
     <section id="view-landing" class="fade-in">
-      <!-- Hero Section -->
       <div class="mt-16 text-center max-w-3xl mx-auto px-4">
         <span class="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold tracking-wide uppercase mb-4 border border-blue-100">
           Plateforme ERP & Staffing ESN
@@ -95,7 +97,7 @@
         </div>
       </div>
 
-      <!-- Bandeau Preuve Sociale (Marquee) -->
+      <!-- Bandeau Preuve Sociale -->
       <div class="w-full overflow-hidden bg-white py-6 border-y border-slate-100 mt-16">
         <p class="text-center text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Ils pilotent leurs missions avec ConsultSync</p>
         <div class="animate-marquee flex items-center space-x-16 text-slate-400 font-bold text-xl uppercase tracking-widest">
@@ -104,7 +106,6 @@
           <span><i class="fa-solid fa-chart-line mr-2"></i>FinanceData</span>
           <span><i class="fa-solid fa-cubes mr-2"></i>Nexus Digital</span>
           <span><i class="fa-solid fa-globe mr-2"></i>Global Services</span>
-          <!-- Duplication pour boucle infinie fluide -->
           <span><i class="fa-solid fa-microchip mr-2"></i>TechConsult</span>
           <span><i class="fa-solid fa-jet-fighter mr-2"></i>AeroSpace Corp</span>
           <span><i class="fa-solid fa-chart-line mr-2"></i>FinanceData</span>
@@ -157,7 +158,7 @@
     <section id="view-consultant" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 fade-in">
       <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-slate-900">Espace Collaborateur — Thomas Laurent</h2>
+          <h2 class="text-2xl font-bold text-slate-900">Espace Collaborateur — <span id="consultant-display-name">Thomas Laurent</span></h2>
           <p class="text-sm text-slate-500">Consultant Full-Stack Senior • Mission actuelle : <span class="font-medium text-slate-700">FinanceData</span></p>
         </div>
       </div>
@@ -377,7 +378,7 @@
     <section id="view-admin" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 fade-in">
       <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Mode Direction / RH</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Mode Direction / RH — <span id="admin-display-name">Administrateur</span></span>
           <h2 class="text-2xl font-bold text-slate-900">Dashboard de Pilotage & Administration</h2>
         </div>
         <button onclick="openReminderModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
@@ -411,7 +412,7 @@
             <i class="fa-solid fa-chart-pie text-purple-600"></i>
           </div>
           <p class="text-3xl font-bold text-slate-900">92,8 %</p>
-          <p class="text-xs text-emerald-600 font-medium mt-1">Objectif > 90% atteint</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1">Objectif supérieur à 90% atteint</p>
         </div>
 
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -426,13 +427,11 @@
 
       <!-- GRAPHIQUE + VALIDATIONS -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <!-- Graphique Chart.js -->
         <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="font-bold text-slate-900 mb-4">Rentabilité par Mission & Évolution CA (k€)</h3>
           <canvas id="adminChart" height="130"></canvas>
         </div>
 
-        <!-- File d'attente de validation -->
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h3 class="font-bold text-slate-900 mb-4">Centre de Validation RH / Frais</h3>
           <div id="validation-queue" class="space-y-4">
@@ -513,7 +512,39 @@
   </main>
 
   <!-- ========================================== -->
-  <!-- MODALE 1 : DEMANDE DE DÉMO                 -->
+  <!-- MODALE 1 : CONNEXION API (JWT AUTH)        -->
+  <!-- ========================================== -->
+  <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <div class="bg-blue-600 text-white p-1.5 rounded-lg text-xs">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Connexion à votre espace</h3>
+        </div>
+        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Connectez-vous avec vos identifiants ESN pour synchroniser vos données avec le serveur.</p>
+      <form onsubmit="submitLoginForm(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">E-mail professionnel</label>
+          <input type="email" id="login-email" required placeholder="thomas.laurent@consultsync.fr" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Mot de passe</label>
+          <input type="password" id="login-password" required placeholder="••••••••" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        <div id="login-error" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-100"></div>
+        <button type="submit" id="login-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition flex justify-center items-center gap-2">
+          <span>Se connecter</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALE 2 : DEMANDE DE DÉMO                 -->
   <!-- ========================================== -->
   <div id="demo-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
@@ -542,7 +573,7 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- MODALE 2 : PRÉVISUALISATION RELANCE EMAIL  -->
+  <!-- MODALE 3 : PRÉVISUALISATION RELANCE EMAIL  -->
   <!-- ========================================== -->
   <div id="reminder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl">
@@ -568,13 +599,145 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- LOGIQUE JAVASCRIPT (SPA, CRA, CHART, ETC.) -->
+  <!-- LOGIQUE JAVASCRIPT & CLIENT API            -->
   <!-- ========================================== -->
   <script>
+    // ==========================================
+    // SERVICE CLIENT API (CONNECTÉ AU BACK-END)
+    // ==========================================
+    const API_BASE_URL = 'http://localhost:3000/api';
+
+    const apiClient = {
+      getToken() {
+        return localStorage.getItem('consultsync_token');
+      },
+      getUser() {
+        const raw = localStorage.getItem('consultsync_user');
+        return raw ? JSON.parse(raw) : null;
+      },
+      setSession(token, user) {
+        localStorage.setItem('consultsync_token', token);
+        localStorage.setItem('consultsync_user', JSON.stringify(user));
+      },
+      clearSession() {
+        localStorage.removeItem('consultsync_token');
+        localStorage.removeItem('consultsync_user');
+      },
+      async request(endpoint, options = {}) {
+        const token = this.getToken();
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(options.headers || {})
+        };
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          ...options,
+          headers
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Erreur de communication avec le serveur');
+        }
+        return data;
+      },
+      async login(email, password) {
+        return this.request('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+      }
+    };
+
+    // ==========================================
+    // ÉTAT GLOBAL & AUTHENTIFICATION
+    // ==========================================
     let isAdmin = false;
     let chartInstance = null;
 
-    // Navigation SPA
+    function syncAuthUI() {
+      const user = apiClient.getUser();
+      const badge = document.getElementById('role-badge');
+      const authBtn = document.getElementById('auth-btn');
+      const authBtnText = document.getElementById('auth-btn-text');
+
+      if (user) {
+        isAdmin = (user.role === 'ADMIN');
+        const fullName = user.name || user.fullName || user.email;
+        badge.textContent = isAdmin ? `Connecté : ${fullName} (Admin)` : `Connecté : ${fullName}`;
+        badge.className = isAdmin
+          ? 'hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700'
+          : 'hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700';
+
+        authBtn.className = 'bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm';
+        authBtnText.textContent = 'Déconnexion';
+
+        if (isAdmin) {
+          document.getElementById('admin-display-name').textContent = fullName;
+        } else {
+          document.getElementById('consultant-display-name').textContent = fullName;
+        }
+      } else {
+        badge.textContent = isAdmin ? 'Mode Démo : Admin' : 'Mode Démo : Consultant';
+        badge.className = isAdmin
+          ? 'hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700'
+          : 'hidden sm:inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700';
+
+        authBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm';
+        authBtnText.textContent = 'Se connecter';
+      }
+    }
+
+    function handleAuthButtonClick() {
+      if (apiClient.getToken()) {
+        apiClient.clearSession();
+        isAdmin = false;
+        syncAuthUI();
+        navigateTo('landing');
+        showToast('Vous avez été déconnecté.');
+      } else {
+        openLoginModal();
+      }
+    }
+
+    function openLoginModal() {
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('login-modal').classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').classList.add('hidden');
+    }
+
+    async function submitLoginForm(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errorBox = document.getElementById('login-error');
+      const submitBtn = document.getElementById('login-submit-btn');
+
+      errorBox.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Connexion...</span>';
+
+      try {
+        const result = await apiClient.login(email, password);
+        apiClient.setSession(result.token, result.user);
+        syncAuthUI();
+        closeLoginModal();
+        navigateToWorkspace();
+        showToast(`Bienvenue ${result.user.name || result.user.email} !`);
+      } catch (err) {
+        errorBox.textContent = err.message || 'Identifiants incorrects ou serveur inaccessible.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Se connecter</span>';
+      }
+    }
+
+    // ==========================================
+    // NAVIGATION SPA & VUES
+    // ==========================================
     function navigateTo(view) {
       document.getElementById('view-landing').classList.add('hidden');
       document.getElementById('view-consultant').classList.add('hidden');
@@ -599,19 +762,15 @@
       }
     }
 
-    // Switch Rôle (Consultant <-> Admin)
+    // Switch Rôle (Mode Démo rapide)
     function toggleRole() {
-      isAdmin = !isAdmin;
-      const badge = document.getElementById('role-badge');
-      if (isAdmin) {
-        badge.textContent = 'Rôle : Admin / Manager';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700';
-        showToast('Basculé en mode Administrateur');
-      } else {
-        badge.textContent = 'Rôle : Consultant';
-        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700';
-        showToast('Basculé en mode Collaborateur');
+      if (apiClient.getToken()) {
+        showToast('Déconnectez-vous pour utiliser le simulateur de rôle démo');
+        return;
       }
+      isAdmin = !isAdmin;
+      syncAuthUI();
+      showToast(isAdmin ? 'Basculé en mode Démo Administrateur' : 'Basculé en mode Démo Collaborateur');
       if (document.getElementById('view-landing').classList.contains('hidden')) {
         navigateToWorkspace();
       }
@@ -628,7 +787,7 @@
       document.getElementById('tab-btn-' + tabName).className = 'consultant-tab pb-3 px-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap';
     }
 
-    // Génération de la grille CRA
+    // Grille CRA
     function initCRAGrid() {
       const grid = document.getElementById('cra-grid');
       const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
@@ -670,7 +829,7 @@
       document.getElementById('cra-total-days').textContent = worked;
     }
 
-    // Ajout Note de frais
+    // Notes de frais
     function addExpense(e) {
       e.preventDefault();
       const title = document.getElementById('exp-title').value;
@@ -767,6 +926,10 @@
 
     // Initialisation au chargement
     initCRAGrid();
+    syncAuthUI();
+    if (apiClient.getToken()) {
+      navigateToWorkspace();
+    }
   </script>
 </body>
 </html>
