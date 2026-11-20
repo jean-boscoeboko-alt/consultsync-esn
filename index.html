@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConsultSync — Gestion d'Activité & Staffing ESN</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: flex;
+      width: max-content;
+      animation: marquee 25s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    .fade-in {
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- NAVBAR FIXE -->
+  <header class="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('landing')">
+        <div class="bg-blue-600 text-white p-2 rounded-lg">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </div>
+        <span class="text-xl font-bold text-blue-600 tracking-tight">ConsultSync</span>
+      </div>
+
+      <!-- Menu Central -->
+      <nav class="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
+        <button onclick="navigateTo('landing')" class="hover:text-blue-600 transition">Accueil & Fonctionnalités</button>
+        <button id="nav-workspace-btn" onclick="navigateToWorkspace()" class="hover:text-blue-600 transition font-semibold text-blue-600">Mon Espace Activité</button>
+        <button onclick="openDemoModal()" class="hover:text-blue-600 transition">Demander une Démo</button>
+      </nav>
+
+      <!-- Switch Rôle -->
+      <div class="flex items-center gap-3">
+        <span id="role-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+          Rôle : Consultant
+        </span>
+        <button onclick="toggleRole()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-repeat"></i> Switch Rôle
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="pt-16">
+
+    <!-- ========================================== -->
+    <!-- VUE 1 : LANDING PAGE                       -->
+    <!-- ========================================== -->
+    <section id="view-landing" class="fade-in">
+      <!-- Hero Section -->
+      <div class="mt-16 text-center max-w-3xl mx-auto px-4">
+        <span class="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold tracking-wide uppercase mb-4 border border-blue-100">
+          Plateforme ERP & Staffing ESN
+        </span>
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+          Gérez votre activité ESN sans tableau Excel
+        </h1>
+        <p class="text-lg text-slate-500 mb-8 leading-relaxed">
+          Centralisez le staffing des consultants, les notes de frais, les justificatifs d'absences et le suivi financier de vos missions dans un seul outil collaboratif.
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <button onclick="openDemoModal()" class="px-8 py-3.5 rounded-full text-white bg-blue-600 hover:bg-blue-700 font-semibold shadow-md transition">
+            Demander une Démo
+          </button>
+          <button onclick="navigateToWorkspace()" class="px-8 py-3.5 rounded-full text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 font-semibold transition">
+            Accéder à l'Application <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+        <div class="mt-8 inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium border border-emerald-100">
+          <i class="fa-solid fa-bolt"></i> +40% de gain de temps sur la gestion administrative
+        </div>
+      </div>
+
+      <!-- Bandeau Preuve Sociale (Marquee) -->
+      <div class="w-full overflow-hidden bg-white py-6 border-y border-slate-100 mt-16">
+        <p class="text-center text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">Ils pilotent leurs missions avec ConsultSync</p>
+        <div class="animate-marquee flex items-center space-x-16 text-slate-400 font-bold text-xl uppercase tracking-widest">
+          <span><i class="fa-solid fa-microchip mr-2"></i>TechConsult</span>
+          <span><i class="fa-solid fa-jet-fighter mr-2"></i>AeroSpace Corp</span>
+          <span><i class="fa-solid fa-chart-line mr-2"></i>FinanceData</span>
+          <span><i class="fa-solid fa-cubes mr-2"></i>Nexus Digital</span>
+          <span><i class="fa-solid fa-globe mr-2"></i>Global Services</span>
+          <!-- Duplication pour boucle infinie fluide -->
+          <span><i class="fa-solid fa-microchip mr-2"></i>TechConsult</span>
+          <span><i class="fa-solid fa-jet-fighter mr-2"></i>AeroSpace Corp</span>
+          <span><i class="fa-solid fa-chart-line mr-2"></i>FinanceData</span>
+          <span><i class="fa-solid fa-cubes mr-2"></i>Nexus Digital</span>
+          <span><i class="fa-solid fa-globe mr-2"></i>Global Services</span>
+        </div>
+      </div>
+
+      <!-- Grille des 4 Fonctionnalités -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl mb-4">
+              <i class="fa-regular fa-calendar-check"></i>
+            </div>
+            <h3 class="font-semibold text-lg text-slate-900">Saisie & Suivi du Staffing</h3>
+            <p class="text-sm text-slate-500 mt-2">Déclaration mensuelle interactive des jours travaillés, astreintes et visibilité long terme.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h3 class="font-semibold text-lg text-slate-900">Gestion des Frais & Factures</h3>
+            <p class="text-sm text-slate-500 mt-2">Dépôt dématérialisé des justificatifs et rattachement direct par mission et période.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-plane-departure"></i>
+            </div>
+            <h3 class="font-semibold text-lg text-slate-900">Suivi des Absences</h3>
+            <p class="text-sm text-slate-500 mt-2">Demandes de CP/RTT, dépôt de certificats médicaux et décompte automatique des soldes.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
+            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+            <h3 class="font-semibold text-lg text-slate-900">Dashboard & Relances</h3>
+            <p class="text-sm text-slate-500 mt-2">Analyse de rentabilité par consultant et relances e-mail automatiques pour les CRA manquants.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VUE 2 : ESPACE COLLABORATEUR (CONSULTANT)  -->
+    <!-- ========================================== -->
+    <section id="view-consultant" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 fade-in">
+      <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Espace Collaborateur — Thomas Laurent</h2>
+          <p class="text-sm text-slate-500">Consultant Full-Stack Senior • Mission actuelle : <span class="font-medium text-slate-700">FinanceData</span></p>
+        </div>
+      </div>
+
+      <!-- Onglets Consultant -->
+      <div class="flex space-x-2 sm:space-x-6 border-b border-slate-200 mb-8 overflow-x-auto">
+        <button onclick="switchConsultantTab('cra')" id="tab-btn-cra" class="consultant-tab pb-3 px-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap">
+          <i class="fa-regular fa-calendar mr-1.5"></i> Staffing / CRA
+        </button>
+        <button onclick="switchConsultantTab('frais')" id="tab-btn-frais" class="consultant-tab pb-3 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-file-invoice-dollar mr-1.5"></i> Notes de Frais & Factures
+        </button>
+        <button onclick="switchConsultantTab('absences')" id="tab-btn-absences" class="consultant-tab pb-3 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-umbrella-beach mr-1.5"></i> Absences & Justificatifs
+        </button>
+        <button onclick="switchConsultantTab('historique')" id="tab-btn-historique" class="consultant-tab pb-3 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap">
+          <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Historique des Missions
+        </button>
+      </div>
+
+      <!-- SOUS-MODULE 2.1 : CRA / STAFFING -->
+      <div id="c-tab-cra" class="c-panel bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div class="flex items-center gap-4">
+            <select id="cra-month" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium bg-slate-50">
+              <option>Novembre 2026</option>
+              <option>Octobre 2026</option>
+              <option>Décembre 2026</option>
+            </select>
+            <span class="text-sm font-semibold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">
+              Total jours travaillés : <span id="cra-total-days">18</span> jours
+            </span>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-200 inline-block"></span> Travaillé</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-200 inline-block"></span> Congé</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-200 inline-block"></span> Astreinte</span>
+            <button onclick="showToast('Votre CRA mensuel a été transmis pour validation !')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+              Valider mon CRA
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Astuce : Cliquez sur un jour ouvré pour basculer entre Travaillé, Congé et Astreinte.</p>
+        <div id="cra-grid" class="grid grid-cols-7 gap-2 max-w-2xl"></div>
+      </div>
+
+      <!-- SOUS-MODULE 2.2 : NOTES DE FRAIS -->
+      <div id="c-tab-frais" class="c-panel hidden grid md:grid-cols-3 gap-8">
+        <div class="md:col-span-1 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4">Nouvelle note de frais</h3>
+          <form onsubmit="addExpense(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Intitulé</label>
+              <input type="text" id="exp-title" required placeholder="Ex: Billet TGV Paris-Lyon" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Montant (€)</label>
+                <input type="number" id="exp-amount" required placeholder="85.50" step="0.01" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Catégorie</label>
+                <select id="exp-cat" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                  <option>Transport</option>
+                  <option>Repas</option>
+                  <option>Hébergement</option>
+                  <option>Matériel / Divers</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Justificatif (PDF / Image)</label>
+              <label class="border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-xl p-4 text-center block cursor-pointer transition">
+                <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-xl mb-1"></i>
+                <p id="exp-file-label" class="text-xs text-slate-500">Cliquez pour joindre un fichier</p>
+                <input type="file" class="hidden" onchange="previewFileName(this, 'exp-file-label')">
+              </label>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition">
+              Soumettre la note de frais
+            </button>
+          </form>
+        </div>
+
+        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="p-6 border-b border-slate-100">
+            <h3 class="font-bold text-slate-900">Historique des frais & factures</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                <tr>
+                  <th class="px-6 py-3">Date</th>
+                  <th class="px-6 py-3">Libellé</th>
+                  <th class="px-6 py-3">Catégorie</th>
+                  <th class="px-6 py-3">Montant</th>
+                  <th class="px-6 py-3">Statut</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-table-body" class="divide-y divide-slate-100">
+                <tr>
+                  <td class="px-6 py-4 text-slate-500">12/11/2026</td>
+                  <td class="px-6 py-4 font-medium">Déjeuner Client FinanceData</td>
+                  <td class="px-6 py-4">Repas</td>
+                  <td class="px-6 py-4 font-semibold">42,00 €</td>
+                  <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Approuvé</span></td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 text-slate-500">18/11/2026</td>
+                  <td class="px-6 py-4 font-medium">Abonnement Pass Navigo</td>
+                  <td class="px-6 py-4">Transport</td>
+                  <td class="px-6 py-4 font-semibold">86,40 €</td>
+                  <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">En attente</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SOUS-MODULE 2.3 : ABSENCES -->
+      <div id="c-tab-absences" class="c-panel hidden space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Solde Congés Payés (CP)</p>
+              <p class="text-3xl font-bold text-slate-900 mt-1">14,5 jours</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+              <i class="fa-solid fa-sun"></i>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p class="text-sm text-slate-500">Solde RTT acquis</p>
+              <p class="text-3xl font-bold text-slate-900 mt-1">6,0 jours</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center text-xl">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4">Déclarer une absence / Déposer un justificatif</h3>
+          <form onsubmit="submitAbsence(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Type d'absence</label>
+              <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option>Congés Payés (CP)</option>
+                <option>RTT</option>
+                <option>Arrêt Maladie</option>
+                <option>Événement familial</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Date de début</label>
+              <input type="date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Justificatif (Arrêt, Certificat)</label>
+              <input type="file" class="w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-semibold transition">
+              Envoyer la demande
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SOUS-MODULE 2.4 : HISTORIQUE MISSIONS -->
+      <div id="c-tab-historique" class="c-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="bg-slate-100 px-6 py-4 flex justify-between items-center">
+            <span class="font-bold text-slate-900">FinanceData — Architecte Cloud</span>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">En cours</span>
+          </div>
+          <div class="p-6 space-y-3 text-sm">
+            <p class="text-slate-600"><i class="fa-regular fa-calendar mr-2 text-slate-400"></i> Période : <strong>Janv. 2026 — Présent</strong></p>
+            <p class="text-slate-600"><i class="fa-solid fa-euro-sign mr-2 text-slate-400"></i> TJM Facturé : <strong>680 € / jour</strong></p>
+            <div class="pt-3 border-t border-slate-100">
+              <button onclick="toggleDocs('docs-m1')" class="text-blue-600 hover:underline font-medium text-xs flex items-center gap-1">
+                <i class="fa-solid fa-folder-open"></i> Voir les factures & frais alloués (3 documents)
+              </button>
+              <div id="docs-m1" class="hidden mt-3 space-y-2 bg-slate-50 p-3 rounded-lg text-xs">
+                <div class="flex justify-between"><span>Facture_Nov2026_FinanceData.pdf</span><button onclick="showToast('Téléchargement de la facture...')" class="text-blue-600 font-semibold">Télécharger</button></div>
+                <div class="flex justify-between"><span>NoteFrais_Deplacement_Oct2026.pdf</span><button onclick="showToast('Téléchargement du justificatif...')" class="text-blue-600 font-semibold">Télécharger</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="bg-slate-100 px-6 py-4 flex justify-between items-center">
+            <span class="font-bold text-slate-900">AeroSpace Corp — Lead Dev React</span>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">Terminée</span>
+          </div>
+          <div class="p-6 space-y-3 text-sm">
+            <p class="text-slate-600"><i class="fa-regular fa-calendar mr-2 text-slate-400"></i> Période : <strong>Mars 2025 — Déc. 2025 (10 mois)</strong></p>
+            <p class="text-slate-600"><i class="fa-solid fa-euro-sign mr-2 text-slate-400"></i> TJM Facturé : <strong>620 € / jour</strong></p>
+            <div class="pt-3 border-t border-slate-100">
+              <button onclick="toggleDocs('docs-m2')" class="text-blue-600 hover:underline font-medium text-xs flex items-center gap-1">
+                <i class="fa-solid fa-folder-open"></i> Voir les factures & frais alloués (12 documents)
+              </button>
+              <div id="docs-m2" class="hidden mt-3 space-y-2 bg-slate-50 p-3 rounded-lg text-xs">
+                <div class="flex justify-between"><span>Bilan_Financier_AeroSpace_2025.pdf</span><button onclick="showToast('Téléchargement de l\'archive...')" class="text-blue-600 font-semibold">Télécharger</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VUE 3 : ESPACE ADMINISTRATION / MANAGER    -->
+    <!-- ========================================== -->
+    <section id="view-admin" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 fade-in">
+      <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Mode Direction / RH</span>
+          <h2 class="text-2xl font-bold text-slate-900">Dashboard de Pilotage & Administration</h2>
+        </div>
+        <button onclick="openReminderModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
+          <i class="fa-solid fa-paper-plane"></i> Relancer les CRA en retard (3)
+        </button>
+      </div>
+
+      <!-- 4 CARTES KPI -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium text-slate-500">Chiffre d'Affaires (Mois)</span>
+            <i class="fa-solid fa-euro-sign text-blue-600"></i>
+          </div>
+          <p id="kpi-ca" class="text-3xl font-bold text-slate-900">148 500 €</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1"><i class="fa-solid fa-arrow-trend-up"></i> +8,4% vs mois dernier</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium text-slate-500">TJM Moyen</span>
+            <i class="fa-solid fa-tag text-emerald-600"></i>
+          </div>
+          <p class="text-3xl font-bold text-slate-900">645 €</p>
+          <p class="text-xs text-slate-400 mt-1">Sur 14 missions actives</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium text-slate-500">TACE Global</span>
+            <i class="fa-solid fa-chart-pie text-purple-600"></i>
+          </div>
+          <p class="text-3xl font-bold text-slate-900">92,8 %</p>
+          <p class="text-xs text-emerald-600 font-medium mt-1">Objectif > 90% atteint</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium text-slate-500">Validations en attente</span>
+            <i class="fa-solid fa-hourglass-half text-amber-500"></i>
+          </div>
+          <p id="kpi-pending" class="text-3xl font-bold text-slate-900">2</p>
+          <p class="text-xs text-slate-400 mt-1">Notes de frais & Congés</p>
+        </div>
+      </div>
+
+      <!-- GRAPHIQUE + VALIDATIONS -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Graphique Chart.js -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4">Rentabilité par Mission & Évolution CA (k€)</h3>
+          <canvas id="adminChart" height="130"></canvas>
+        </div>
+
+        <!-- File d'attente de validation -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <h3 class="font-bold text-slate-900 mb-4">Centre de Validation RH / Frais</h3>
+          <div id="validation-queue" class="space-y-4">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center" id="val-item-1">
+              <div>
+                <p class="text-xs font-bold text-blue-600">NOTE DE FRAIS • 86,40 €</p>
+                <p class="text-sm font-semibold text-slate-800">Thomas Laurent</p>
+                <p class="text-xs text-slate-500">Pass Navigo (Novembre)</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="processValidation('val-item-1', true)" class="text-emerald-600 bg-emerald-100 hover:bg-emerald-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Approuver">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button onclick="processValidation('val-item-1', false)" class="text-rose-600 bg-rose-100 hover:bg-rose-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Rejeter">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center" id="val-item-2">
+              <div>
+                <p class="text-xs font-bold text-purple-600">CONGÉS PAYÉS • 3 JOURS</p>
+                <p class="text-sm font-semibold text-slate-800">Sarah Benali</p>
+                <p class="text-xs text-slate-500">Du 24/12 au 26/12/2026</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="processValidation('val-item-2', true)" class="text-emerald-600 bg-emerald-100 hover:bg-emerald-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Approuver">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button onclick="processValidation('val-item-2', false)" class="text-rose-600 bg-rose-100 hover:bg-rose-200 rounded-full w-8 h-8 flex items-center justify-center transition" title="Rejeter">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATRICE DE DROITS (RBAC) -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+          <div>
+            <h3 class="font-bold text-slate-900">Matrice de Visibilité & Permissions (RBAC)</h3>
+            <p class="text-xs text-slate-500">Définissez les informations accessibles aux collaborateurs</p>
+          </div>
+          <button onclick="showToast('Permissions mises à jour pour tous les collaborateurs')" class="text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-medium">
+            Enregistrer les droits
+          </button>
+        </div>
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+            <tr>
+              <th class="px-6 py-3">Module / Donnée</th>
+              <th class="px-6 py-3 text-center">Accès Collaborateur</th>
+              <th class="px-6 py-3 text-center">Accès Admin</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr>
+              <td class="px-6 py-3.5 font-medium">Saisie du Staffing / CRA personnel</td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" checked class="rounded text-blue-600"></td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" checked disabled></td>
+            </tr>
+            <tr>
+              <td class="px-6 py-3.5 font-medium">Consultation du TJM facturé au client</td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" class="rounded text-blue-600"></td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" checked disabled></td>
+            </tr>
+            <tr>
+              <td class="px-6 py-3.5 font-medium">Dashboard financier global de l'ESN</td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" disabled></td>
+              <td class="px-6 py-3.5 text-center"><input type="checkbox" checked disabled></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODALE 1 : DEMANDE DE DÉMO                 -->
+  <!-- ========================================== -->
+  <div id="demo-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-900">Demander une démonstration</h3>
+        <button onclick="closeDemoModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="submitDemoForm(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Nom complet</label>
+          <input type="text" required placeholder="Camille Dupont" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">E-mail professionnel</label>
+          <input type="email" required placeholder="c.dupont@entreprise.fr" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Entreprise / ESN</label>
+          <input type="text" required placeholder="TechConsult" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition">
+          Envoyer ma demande
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALE 2 : PRÉVISUALISATION RELANCE EMAIL  -->
+  <!-- ========================================== -->
+  <div id="reminder-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-900">Relance Automatique CRA (3 consultants)</h3>
+        <button onclick="closeReminderModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Destinataires en retard : <strong>Marc Vasseur, Julie Moreau, Karim Ziani</strong></p>
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm text-slate-700 space-y-2 mb-4">
+        <p class="text-xs text-slate-400">Objet : [Action requise] Saisie de votre CRA — Novembre 2026</p>
+        <hr class="border-slate-200">
+        <p>Bonjour <span class="bg-yellow-100 px-1 rounded font-mono text-xs">{nom_consultant}</span>,</p>
+        <p>Sauf erreur de notre part, votre staffing pour la période de <span class="bg-yellow-100 px-1 rounded font-mono text-xs">{mois}</span> n'a pas encore été validé.</p>
+        <p>Merci de le compléter dès aujourd'hui via votre espace : <span class="bg-yellow-100 px-1 rounded font-mono text-xs">{lien_direct}</span></p>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button onclick="closeReminderModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Annuler</button>
+        <button onclick="sendReminders()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg">
+          <i class="fa-solid fa-paper-plane mr-1"></i> Envoyer les 3 e-mails
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- LOGIQUE JAVASCRIPT (SPA, CRA, CHART, ETC.) -->
+  <!-- ========================================== -->
+  <script>
+    let isAdmin = false;
+    let chartInstance = null;
+
+    // Navigation SPA
+    function navigateTo(view) {
+      document.getElementById('view-landing').classList.add('hidden');
+      document.getElementById('view-consultant').classList.add('hidden');
+      document.getElementById('view-admin').classList.add('hidden');
+
+      if (view === 'landing') {
+        document.getElementById('view-landing').classList.remove('hidden');
+      } else {
+        navigateToWorkspace();
+      }
+    }
+
+    function navigateToWorkspace() {
+      document.getElementById('view-landing').classList.add('hidden');
+      if (isAdmin) {
+        document.getElementById('view-consultant').classList.add('hidden');
+        document.getElementById('view-admin').classList.remove('hidden');
+        initAdminChart();
+      } else {
+        document.getElementById('view-admin').classList.add('hidden');
+        document.getElementById('view-consultant').classList.remove('hidden');
+      }
+    }
+
+    // Switch Rôle (Consultant <-> Admin)
+    function toggleRole() {
+      isAdmin = !isAdmin;
+      const badge = document.getElementById('role-badge');
+      if (isAdmin) {
+        badge.textContent = 'Rôle : Admin / Manager';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700';
+        showToast('Basculé en mode Administrateur');
+      } else {
+        badge.textContent = 'Rôle : Consultant';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700';
+        showToast('Basculé en mode Collaborateur');
+      }
+      if (document.getElementById('view-landing').classList.contains('hidden')) {
+        navigateToWorkspace();
+      }
+    }
+
+    // Onglets Consultant
+    function switchConsultantTab(tabName) {
+      document.querySelectorAll('.c-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('c-tab-' + tabName).classList.remove('hidden');
+
+      document.querySelectorAll('.consultant-tab').forEach(btn => {
+        btn.className = 'consultant-tab pb-3 px-2 text-sm font-medium text-slate-500 hover:text-slate-700 whitespace-nowrap';
+      });
+      document.getElementById('tab-btn-' + tabName).className = 'consultant-tab pb-3 px-2 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap';
+    }
+
+    // Génération de la grille CRA
+    function initCRAGrid() {
+      const grid = document.getElementById('cra-grid');
+      const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      days.forEach(d => {
+        grid.innerHTML += `<div class="text-center text-xs font-bold text-slate-400 py-1">${d}</div>`;
+      });
+
+      for (let i = 1; i <= 30; i++) {
+        const isWeekend = (i % 7 === 6 || i % 7 === 0);
+        const state = isWeekend ? 'weekend' : 'worked';
+        const colorClass = isWeekend ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-emerald-100 text-emerald-700 cursor-pointer hover:opacity-80';
+        grid.innerHTML += `
+          <div onclick="cycleDayState(this)" data-state="${state}" class="aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition ${colorClass}">
+            ${i}
+          </div>`;
+      }
+      updateCRACount();
+    }
+
+    function cycleDayState(el) {
+      const current = el.getAttribute('data-state');
+      if (current === 'weekend') return;
+
+      if (current === 'worked') {
+        el.setAttribute('data-state', 'leave');
+        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-rose-100 text-rose-700 cursor-pointer';
+      } else if (current === 'leave') {
+        el.setAttribute('data-state', 'oncall');
+        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-amber-100 text-amber-700 cursor-pointer';
+      } else {
+        el.setAttribute('data-state', 'worked');
+        el.className = 'aspect-square rounded-lg flex items-center justify-center text-sm font-semibold select-none transition bg-emerald-100 text-emerald-700 cursor-pointer';
+      }
+      updateCRACount();
+    }
+
+    function updateCRACount() {
+      const worked = document.querySelectorAll('#cra-grid [data-state="worked"]').length;
+      document.getElementById('cra-total-days').textContent = worked;
+    }
+
+    // Ajout Note de frais
+    function addExpense(e) {
+      e.preventDefault();
+      const title = document.getElementById('exp-title').value;
+      const amount = parseFloat(document.getElementById('exp-amount').value).toFixed(2).replace('.', ',');
+      const cat = document.getElementById('exp-cat').value;
+
+      const tbody = document.getElementById('expenses-table-body');
+      const row = `
+        <tr class="fade-in bg-blue-50/30">
+          <td class="px-6 py-4 text-slate-500">20/11/2026</td>
+          <td class="px-6 py-4 font-medium">${title}</td>
+          <td class="px-6 py-4">${cat}</td>
+          <td class="px-6 py-4 font-semibold">${amount} €</td>
+          <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">En attente</span></td>
+        </tr>`;
+      tbody.insertAdjacentHTML('afterbegin', row);
+      e.target.reset();
+      document.getElementById('exp-file-label').textContent = 'Cliquez pour joindre un fichier';
+      showToast('Note de frais ajoutée et transmise au manager');
+    }
+
+    function previewFileName(input, labelId) {
+      if (input.files && input.files[0]) {
+        document.getElementById(labelId).textContent = 'Fichier joint : ' + input.files[0].name;
+      }
+    }
+
+    function submitAbsence(e) {
+      e.preventDefault();
+      e.target.reset();
+      showToast('Demande d\'absence enregistrée avec justificatif');
+    }
+
+    function toggleDocs(id) {
+      document.getElementById(id).classList.toggle('hidden');
+    }
+
+    // Validation Admin
+    function processValidation(id, approved) {
+      const item = document.getElementById(id);
+      if (item) item.remove();
+      const pendingEl = document.getElementById('kpi-pending');
+      pendingEl.textContent = Math.max(0, parseInt(pendingEl.textContent) - 1);
+      showToast(approved ? 'Demande approuvée avec succès' : 'Demande rejetée');
+    }
+
+    // Graphique Admin
+    function initAdminChart() {
+      if (chartInstance) return;
+      const ctx = document.getElementById('adminChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.'],
+          datasets: [{
+            label: 'Chiffre d\'Affaires Mensuel (k€)',
+            data: [122, 130, 115, 138, 137, 148.5],
+            backgroundColor: '#2563eb',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // Modales & Toasts
+    function openDemoModal() { document.getElementById('demo-modal').classList.remove('hidden'); }
+    function closeDemoModal() { document.getElementById('demo-modal').classList.add('hidden'); }
+    function submitDemoForm(e) {
+      e.preventDefault();
+      closeDemoModal();
+      showToast('Merci ! Notre équipe vous recontactera sous 24h.');
+    }
+
+    function openReminderModal() { document.getElementById('reminder-modal').classList.remove('hidden'); }
+    function closeReminderModal() { document.getElementById('reminder-modal').classList.add('hidden'); }
+    function sendReminders() {
+      closeReminderModal();
+      showToast('3 e-mails de relance CRA envoyés automatiquement');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 fade-in';
+      toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    // Initialisation au chargement
+    initCRAGrid();
+  </script>
+</body>
+</html>
